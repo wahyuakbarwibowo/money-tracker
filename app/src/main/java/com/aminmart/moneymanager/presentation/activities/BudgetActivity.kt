@@ -17,6 +17,7 @@ import com.aminmart.moneymanager.R
 import com.aminmart.moneymanager.data.local.CategoryStore
 import com.aminmart.moneymanager.domain.model.Budget
 import com.aminmart.moneymanager.presentation.adapters.BudgetAdapter
+import com.aminmart.moneymanager.presentation.ui.CurrencyFormatter
 import com.aminmart.moneymanager.presentation.ui.formatWholeAmount
 import com.aminmart.moneymanager.presentation.ui.parseWholeAmount
 import com.aminmart.moneymanager.presentation.viewmodels.BudgetViewModel
@@ -47,9 +48,7 @@ class BudgetActivity : BottomNavigationActivity() {
     private lateinit var viewEmpty: View
 
     private lateinit var adapter: BudgetAdapter
-    private val currencyFormat = NumberFormat.getCurrencyInstance(Locale("id", "ID")).apply {
-        maximumFractionDigits = 0
-    }
+    private val currencyFormat = CurrencyFormatter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -286,14 +285,42 @@ class BudgetActivity : BottomNavigationActivity() {
             .show()
     }
 
+    override fun onCreateOptionsMenu(menu: android.view.Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_budget, menu)
+        return true
+    }
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             android.R.id.home -> {
                 finish()
                 true
             }
+            R.id.action_rollover -> {
+                confirmRollover()
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
+    }
+
+    private fun confirmRollover() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.budget_rollover)
+            .setMessage(R.string.budget_rollover_confirm)
+            .setPositiveButton(R.string.budget_rollover) { _, _ ->
+                activityScope.launch {
+                    val created = app.rolloverBudgetsUseCase()
+                    android.widget.Toast.makeText(
+                        this@BudgetActivity,
+                        getString(R.string.budget_rollover_done, created),
+                        android.widget.Toast.LENGTH_LONG
+                    ).show()
+                    viewModel.loadInitialBudgets()
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     override fun onResume() {

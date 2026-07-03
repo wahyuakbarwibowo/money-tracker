@@ -128,4 +128,72 @@
     <string name="cat_education">Education</string>
     <string name="cat_housing">Housing</string>
     <string name="cat_other_expense">Other Expense</string>
+
+    <!-- Appearance / Theme -->
+    <string name="appearance_title">Appearance</string>
+    <string name="choose_theme">Choose Theme</string>
+    <string name="theme_dialog_title">Theme</string>
+    <string name="theme_system">Follow System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+
+    <!-- Security / App Lock -->
+    <string name="security_title">Security</string>
+    <string name="app_lock_label">App Lock</string>
+    <string name="app_lock_desc">Require biometric or device PIN to open the app.</string>
+    <string name="app_lock_title">Unlock Money Manager</string>
+    <string name="app_lock_subtitle">Authenticate to continue</string>
+    <string name="app_lock_unavailable">No biometric or device lock is set up on this device.</string>
+
+    <!-- Riba Report -->
+    <string name="riba_report_title">Riba Report</string>
+    <string name="riba_report_desc">Review transactions you flagged as riba.</string>
+    <string name="open_riba_report">Open Riba Report</string>
+    <string name="riba_total_label">Total flagged as riba</string>
+    <string name="riba_count_format">%1$d transaction(s) flagged</string>
+    <string name="riba_empty">No transactions flagged as riba.</string>
+
+    <!-- Search -->
+    <string name="search">Search</string>
+    <string name="search_transactions_hint">Search description or category</string>
+
+    <!-- Notifications -->
+    <string name="channel_reminders">Reminders</string>
+    <string name="channel_backup">Backup</string>
+    <string name="notif_debt_due_title">Debt due soon</string>
+    <string name="notif_debt_due_body">%1$d debt(s) due within 3 days, totaling %2$s.</string>
+    <string name="notif_budget_alert_title">Budget alert</string>
+    <string name="notif_budget_alert_line">%1$s: %2$d%% used</string>
+    <string name="notif_backup_title">Backup complete</string>
+    <string name="notif_backup_body">Your data has been backed up automatically.</string>
+
+    <!-- Budget rollover -->
+    <string name="budget_rollover">Carry over from last month</string>
+    <string name="budget_rollover_confirm">Create this month\'s budgets from last month, adding any leftover to each allowance?</string>
+    <string name="budget_rollover_done">%1$d budget(s) carried over.</string>
+
+    <!-- Recurring transactions -->
+    <string name="recurring_title">Recurring</string>
+    <string name="recurring_desc">Auto-create transactions on a schedule.</string>
+    <string name="open_recurring">Manage Recurring</string>
+    <string name="recurring_add">Add recurring rule</string>
+    <string name="recurring_empty">No recurring rules yet.</string>
+    <string name="recurring_interval_hint">Repeat every (interval)</string>
+    <string name="recurring_schedule_format">Every %1$d %2$s</string>
+    <string name="recurring_deleted">Recurring rule deleted.</string>
+    <string name="freq_daily">day(s)</string>
+    <string name="freq_weekly">week(s)</string>
+    <string name="freq_monthly">month(s)</string>
+    <string name="freq_yearly">year(s)</string>
+
+    <!-- Accounts / wallets -->
+    <string name="accounts_title">Accounts</string>
+    <string name="accounts_desc">Manage cash, bank and e-wallet balances.</string>
+    <string name="open_accounts">Manage Accounts</string>
+    <string name="account_add">Add account</string>
+    <string name="accounts_empty">No accounts yet.</string>
+    <string name="account_name_hint">Account name</string>
+    <string name="account_initial_hint">Initial balance</string>
+    <string name="account_default_locked">The default account can\'t be deleted.</string>
+    <string name="account_label">Account</string>
 </resources>

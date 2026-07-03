@@ -42,11 +42,13 @@ interface TransactionRepository {
         limit: Int,
         offset: Int,
         type: Transaction.TransactionType? = null,
-        category: String? = null
+        category: String? = null,
+        query: String? = null
     ): List<Transaction>
     suspend fun getTransactionsCount(
         type: Transaction.TransactionType? = null,
-        category: String? = null
+        category: String? = null,
+        query: String? = null
     ): Int
     
     /**

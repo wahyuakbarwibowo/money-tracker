@@ -8,6 +8,9 @@ import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
 import com.aminmart.moneymanager.R
 import com.aminmart.moneymanager.domain.model.Transaction
+import com.aminmart.moneymanager.presentation.security.AppLockState
+import com.aminmart.moneymanager.presentation.security.BiometricGate
+import com.aminmart.moneymanager.presentation.security.SecurityPreference
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
 import androidx.activity.result.contract.ActivityResultContracts
@@ -51,11 +54,43 @@ class MainActivity : AppCompatActivity() {
         container = findViewById(R.id.fragment_container)
 
         setupBottomNavigation()
+        requestNotificationPermissionIfNeeded()
 
         // Show dashboard by default
         if (savedInstanceState == null) {
-            showDashboard()
+            if (needsAppLock()) {
+                authenticateThenStart()
+            } else {
+                showDashboard()
+            }
         }
+    }
+
+    private val notificationPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* result ignored */ }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.TIRAMISU) return
+        val granted = checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (!granted) {
+            notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    private fun needsAppLock(): Boolean =
+        SecurityPreference.isLockEnabled(this) &&
+            !AppLockState.authenticated &&
+            BiometricGate.canAuthenticate(this)
+
+    private fun authenticateThenStart() {
+        BiometricGate.prompt(
+            activity = this,
+            title = getString(R.string.app_lock_title),
+            subtitle = getString(R.string.app_lock_subtitle),
+            onSuccess = { showDashboard() },
+            onFailure = { finishAffinity() }
+        )
     }
 
     private fun setupBottomNavigation() {

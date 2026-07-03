@@ -8,7 +8,9 @@ import com.aminmart.moneymanager.data.datasource.ExportManager
 import com.aminmart.moneymanager.data.importer.CsvImporter
 import com.aminmart.moneymanager.data.repository.BudgetRepositoryImpl
 import com.aminmart.moneymanager.data.repository.DebtRepositoryImpl
+import com.aminmart.moneymanager.data.repository.AccountRepositoryImpl
 import com.aminmart.moneymanager.data.repository.ImportHistoryRepositoryImpl
+import com.aminmart.moneymanager.data.repository.RecurringRepositoryImpl
 import com.aminmart.moneymanager.data.repository.TransactionRepositoryImpl
 import com.aminmart.moneymanager.domain.repository.BackupRepository
 import com.aminmart.moneymanager.domain.repository.BudgetRepository
@@ -18,6 +20,13 @@ import com.aminmart.moneymanager.domain.repository.ExportRepository
 import com.aminmart.moneymanager.domain.repository.ImportHistoryRepository
 import com.aminmart.moneymanager.domain.repository.TransactionRepository
 import com.aminmart.moneymanager.domain.usecase.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import com.aminmart.moneymanager.presentation.notifications.NotificationHelper
+import com.aminmart.moneymanager.presentation.ui.ThemePreference
+import com.aminmart.moneymanager.work.WorkScheduler
 
 /**
  * Application class - Entry point for the app
@@ -43,6 +52,10 @@ class MoneyManagerApplication : Application() {
     lateinit var exportRepository: ExportRepository
         private set
     lateinit var debtRepository: DebtRepository
+        private set
+    lateinit var recurringRepository: RecurringRepositoryImpl
+        private set
+    lateinit var accountRepository: AccountRepositoryImpl
         private set
 
     // Use Cases - Transactions
@@ -74,6 +87,8 @@ class MoneyManagerApplication : Application() {
         private set
     lateinit var syncBudgetSpentUseCase: SyncBudgetSpentUseCase
         private set
+    lateinit var getRibaReportUseCase: GetRibaReportUseCase
+        private set
 
     // Use Cases - Budget
     lateinit var getAllBudgetsUseCase: GetAllBudgetsUseCase
@@ -89,6 +104,8 @@ class MoneyManagerApplication : Application() {
     lateinit var getBudgetsPageUseCase: GetBudgetsPageUseCase
         private set
     lateinit var getBudgetsCountUseCase: GetBudgetsCountUseCase
+        private set
+    lateinit var rolloverBudgetsUseCase: RolloverBudgetsUseCase
         private set
 
     // Use Cases - Import
@@ -123,10 +140,26 @@ class MoneyManagerApplication : Application() {
     lateinit var debtUseCases: DebtUseCases
         private set
 
+    // Use Cases - Recurring
+    lateinit var recurringUseCases: RecurringUseCases
+        private set
+
+    // Use Cases - Accounts
+    lateinit var accountUseCases: AccountUseCases
+        private set
+
     override fun onCreate() {
         super.onCreate()
         instance = this
+        ThemePreference.apply(this)
         initializeDependencies()
+        NotificationHelper.ensureChannels(this)
+        WorkScheduler.schedule(this)
+
+        // Catch up any due recurring transactions on launch.
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            recurringUseCases.generateDue()
+        }
     }
 
     private fun initializeDependencies() {
@@ -141,6 +174,8 @@ class MoneyManagerApplication : Application() {
         backupRepository = BackupManager(this, transactionRepository, budgetRepository)
         exportRepository = ExportManager(this, transactionRepository)
         debtRepository = DebtRepositoryImpl(database)
+        recurringRepository = RecurringRepositoryImpl(database)
+        accountRepository = AccountRepositoryImpl(database)
 
         // Initialize Use Cases - Transactions
         syncBudgetSpentUseCase = SyncBudgetSpentUseCase(transactionRepository, budgetRepository)
@@ -157,6 +192,7 @@ class MoneyManagerApplication : Application() {
         getDashboardStatsUseCase = GetDashboardStatsUseCase(transactionRepository, budgetRepository)
         getExpenseByCategoryUseCase = GetExpenseByCategoryUseCase(transactionRepository)
         getMonthlyExpensesUseCase = GetMonthlyExpensesUseCase(transactionRepository)
+        getRibaReportUseCase = GetRibaReportUseCase(transactionRepository)
 
         // Initialize Use Cases - Budget
         getAllBudgetsUseCase = GetAllBudgetsUseCase(budgetRepository)
@@ -166,6 +202,7 @@ class MoneyManagerApplication : Application() {
         getBudgetByCategoryUseCase = GetBudgetByCategoryUseCase(budgetRepository)
         getBudgetsPageUseCase = GetBudgetsPageUseCase(budgetRepository)
         getBudgetsCountUseCase = GetBudgetsCountUseCase(budgetRepository)
+        rolloverBudgetsUseCase = RolloverBudgetsUseCase(budgetRepository)
 
         // Initialize Use Cases - Import
         importCsvUseCase = ImportCsvUseCase(csvImportRepository, importHistoryRepository)
@@ -193,6 +230,21 @@ class MoneyManagerApplication : Application() {
             addDebt = AddDebt(debtRepository),
             updateDebt = UpdateDebt(debtRepository),
             deleteDebt = DeleteDebt(debtRepository)
+        )
+
+        // Initialize Use Cases - Recurring
+        recurringUseCases = RecurringUseCases(
+            getRules = GetRecurringRulesUseCase(recurringRepository),
+            addRule = AddRecurringRuleUseCase(recurringRepository),
+            deleteRule = DeleteRecurringRuleUseCase(recurringRepository),
+            generateDue = GenerateDueTransactionsUseCase(recurringRepository, addTransactionUseCase)
+        )
+
+        // Initialize Use Cases - Accounts
+        accountUseCases = AccountUseCases(
+            getAccounts = GetAccountsUseCase(accountRepository),
+            addAccount = AddAccountUseCase(accountRepository),
+            deleteAccount = DeleteAccountUseCase(accountRepository)
         )
     }
 

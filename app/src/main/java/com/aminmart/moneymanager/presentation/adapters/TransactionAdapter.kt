@@ -7,7 +7,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.aminmart.moneymanager.R
 import com.aminmart.moneymanager.domain.model.Transaction
-import java.text.NumberFormat
+import com.aminmart.moneymanager.presentation.ui.CurrencyFormatter
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -22,9 +22,6 @@ class TransactionAdapter(
 ) : RecyclerView.Adapter<TransactionAdapter.TransactionViewHolder>() {
 
     private val dateFormat = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale("id", "ID"))
-    private val currencyFormat = NumberFormat.getCurrencyInstance(Locale("id", "ID")).apply {
-        maximumFractionDigits = 0
-    }
 
     class TransactionViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val textDate: TextView = itemView.findViewById(R.id.text_transaction_date)
@@ -48,12 +45,8 @@ class TransactionAdapter(
         holder.textCategory.text = transaction.category
         holder.textDescription.text = transaction.description.ifEmpty { "-" }
         
-        val amountText = if (transaction.type == Transaction.TransactionType.INCOME) {
-            "+${currencyFormat.format(transaction.amount)}"
-        } else {
-            "-${currencyFormat.format(transaction.amount)}"
-        }
-        holder.textAmount.text = amountText
+        val isIncome = transaction.type == Transaction.TransactionType.INCOME
+        holder.textAmount.text = CurrencyFormatter.formatSigned(transaction.amount, isIncome)
 
         // Set color based on type
         val context = holder.itemView.context

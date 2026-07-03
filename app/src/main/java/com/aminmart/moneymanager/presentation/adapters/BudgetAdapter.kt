@@ -8,8 +8,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.aminmart.moneymanager.R
 import com.aminmart.moneymanager.domain.model.Budget
-import java.text.NumberFormat
-import java.util.Locale
+import com.aminmart.moneymanager.presentation.ui.CurrencyFormatter
 
 /**
  * Adapter for displaying budgets in RecyclerView
@@ -19,10 +18,6 @@ class BudgetAdapter(
     private val onItemClick: (Budget) -> Unit,
     private val onEditClick: (Budget) -> Unit
 ) : RecyclerView.Adapter<BudgetAdapter.BudgetViewHolder>() {
-
-    private val currencyFormat = NumberFormat.getCurrencyInstance(Locale("id", "ID")).apply {
-        maximumFractionDigits = 0
-    }
 
     class BudgetViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val textCategory: TextView = itemView.findViewById(R.id.text_budget_category)
@@ -43,9 +38,9 @@ class BudgetAdapter(
         val budget = budgets[position]
 
         holder.textCategory.text = budget.category
-        holder.textBudget.text = currencyFormat.format(budget.monthlyBudget)
-        holder.textSpent.text = "Spent: ${currencyFormat.format(budget.spent)}"
-        holder.textRemaining.text = "Remaining: ${currencyFormat.format(budget.remaining)}"
+        holder.textBudget.text = CurrencyFormatter.format(budget.monthlyBudget)
+        holder.textSpent.text = "Spent: ${CurrencyFormatter.format(budget.spent)}"
+        holder.textRemaining.text = "Remaining: ${CurrencyFormatter.format(budget.remaining)}"
 
         // Update progress bar
         val progress = budget.percentageUsed.coerceIn(0f, 1f)

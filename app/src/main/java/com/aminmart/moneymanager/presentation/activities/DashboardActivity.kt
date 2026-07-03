@@ -14,6 +14,7 @@ import com.aminmart.moneymanager.R
 import com.aminmart.moneymanager.domain.model.DashboardStats
 import com.aminmart.moneymanager.domain.model.Transaction
 import com.aminmart.moneymanager.presentation.adapters.TransactionAdapter
+import com.aminmart.moneymanager.presentation.ui.CurrencyFormatter
 import com.aminmart.moneymanager.presentation.viewmodels.DashboardViewModel
 import com.aminmart.moneymanager.presentation.viewmodels.DebtSummary
 import com.google.android.material.card.MaterialCardView
@@ -49,9 +50,7 @@ class DashboardActivity : BottomNavigationActivity() {
         }
     }
 
-    private val currencyFormat = NumberFormat.getCurrencyInstance(Locale("id", "ID")).apply {
-        maximumFractionDigits = 0
-    }
+    private val currencyFormat = CurrencyFormatter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

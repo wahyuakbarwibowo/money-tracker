@@ -93,6 +93,10 @@ class AddTransactionViewModel(
         _transactionState.value = _transactionState.value.copy(isRiba = isRiba)
     }
 
+    fun setAccountId(accountId: Long) {
+        _transactionState.value = _transactionState.value.copy(accountId = accountId)
+    }
+
     fun editTransaction(transactionId: Long) {
         _uiState.value = _uiState.value.copy(isLoading = true)
 

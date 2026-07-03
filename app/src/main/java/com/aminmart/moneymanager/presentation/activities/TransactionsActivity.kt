@@ -10,6 +10,7 @@ import android.widget.Spinner
 import android.widget.TextView
 import android.widget.ArrayAdapter
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.widget.SearchView
 import androidx.appcompat.widget.Toolbar
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -165,6 +166,22 @@ class TransactionsActivity : BottomNavigationActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_transactions, menu)
+
+        val searchItem = menu.findItem(R.id.action_search)
+        val searchView = searchItem.actionView as SearchView
+        searchView.queryHint = getString(R.string.search_transactions_hint)
+        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                viewModel.setSearchQuery(query)
+                searchView.clearFocus()
+                return true
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                viewModel.setSearchQuery(newText)
+                return true
+            }
+        })
         return true
     }
 

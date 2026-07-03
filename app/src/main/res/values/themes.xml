@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Base Application Theme -->
-    <style name="AppTheme" parent="Theme.MaterialComponents.Light.NoActionBar">
+    <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="colorPrimary">@color/primary</item>
         <item name="colorPrimaryDark">@color/primary_dark</item>
         <item name="colorAccent">@color/accent</item>
+        <item name="colorSurface">@color/surface</item>
         <item name="android:colorBackground">@color/background</item>
         <item name="android:statusBarColor">@color/primary_dark</item>
         <item name="android:windowBackground">@color/background</item>
@@ -35,7 +36,7 @@
     <style name="CardStyle" parent="Widget.MaterialComponents.CardView">
         <item name="cardCornerRadius">12dp</item>
         <item name="cardElevation">4dp</item>
-        <item name="cardBackgroundColor">@color/white</item>
+        <item name="cardBackgroundColor">@color/card_background</item>
     </style>
 
     <!-- Input Field Style -->
@@ -48,14 +49,14 @@
 
     <!-- Bottom Navigation Style -->
     <style name="BottomNavigationStyle" parent="Widget.MaterialComponents.BottomNavigationView">
-        <item name="android:background">@color/white</item>
+        <item name="android:background">@color/surface</item>
         <item name="itemIconTint">@color/bottom_nav_color</item>
         <item name="itemTextColor">@color/bottom_nav_color</item>
         <item name="labelVisibilityMode">labeled</item>
     </style>
 
     <!-- Dialog Style -->
-    <style name="AppDialog" parent="Theme.MaterialComponents.Light.Dialog.Alert">
+    <style name="AppDialog" parent="Theme.MaterialComponents.DayNight.Dialog.Alert">
         <item name="colorPrimary">@color/primary</item>
         <item name="colorAccent">@color/accent</item>
     </style>

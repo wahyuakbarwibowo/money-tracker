@@ -11,8 +11,14 @@ data class Transaction(
     val description: String,
     val date: Long, // Timestamp in milliseconds
     val createdAt: Long = System.currentTimeMillis(),
-    val isRiba: Boolean = false
+    val isRiba: Boolean = false,
+    val accountId: Long = DEFAULT_ACCOUNT_ID
 ) {
+    companion object {
+        const val DEFAULT_ACCOUNT_ID = 1L
+    }
+
+
     enum class TransactionType {
         INCOME,
         EXPENSE

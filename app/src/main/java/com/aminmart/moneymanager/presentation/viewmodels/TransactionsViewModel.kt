@@ -48,6 +48,9 @@ class TransactionsViewModel(
     private val _filterCategory = MutableStateFlow<String?>(null)
     val filterCategory: StateFlow<String?> = _filterCategory.asStateFlow()
 
+    private val _searchQuery = MutableStateFlow<String?>(null)
+    val searchQuery: StateFlow<String?> = _searchQuery.asStateFlow()
+
     init {
         loadInitialTransactions()
     }
@@ -60,14 +63,15 @@ class TransactionsViewModel(
             try {
                 currentOffset = 0
                 totalCount = withContext(Dispatchers.IO) {
-                    getTransactionsCountUseCase(_filterType.value, _filterCategory.value)
+                    getTransactionsCountUseCase(_filterType.value, _filterCategory.value, _searchQuery.value)
                 }
                 val firstPage = withContext(Dispatchers.IO) {
                     getTransactionsPageUseCase(
                         limit = pageSize,
                         offset = 0,
                         type = _filterType.value,
-                        category = _filterCategory.value
+                        category = _filterCategory.value,
+                        query = _searchQuery.value
                     )
                 }
                 _transactions.value = firstPage
@@ -94,7 +98,8 @@ class TransactionsViewModel(
                         limit = pageSize,
                         offset = currentOffset,
                         type = _filterType.value,
-                        category = _filterCategory.value
+                        category = _filterCategory.value,
+                        query = _searchQuery.value
                     )
                 }
                 if (page.isNotEmpty()) {
@@ -123,9 +128,17 @@ class TransactionsViewModel(
         loadInitialTransactions()
     }
 
+    fun setSearchQuery(query: String?) {
+        val normalized = query?.trim()?.takeIf { it.isNotEmpty() }
+        if (normalized == _searchQuery.value) return
+        _searchQuery.value = normalized
+        loadInitialTransactions()
+    }
+
     fun clearFilters() {
         _filterType.value = null
         _filterCategory.value = null
+        _searchQuery.value = null
         loadInitialTransactions()
     }
 

@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.aminmart.moneymanager.R
 import com.aminmart.moneymanager.domain.model.Debt
+import com.aminmart.moneymanager.presentation.ui.CurrencyFormatter
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -41,7 +42,7 @@ class DebtAdapter(
         fun bind(debt: Debt) {
             personName.text = debt.personName
             description.text = debt.description
-            amount.text = "Rp ${debt.amount}"
+            amount.text = CurrencyFormatter.format(debt.amount)
 
             val sdf = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
             dueDate.text = "Due: ${sdf.format(Date(debt.dueDate))}"

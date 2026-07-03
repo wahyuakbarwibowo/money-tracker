@@ -87,3 +87,49 @@ class GetBudgetsCountUseCase(
         return repository.getBudgetsCount(month)
     }
 }
+
+/**
+ * Carries last month's budgets into the current month. For each previous-month
+ * budget that has no current-month counterpart, a fresh budget is created whose
+ * allowance is the base plus any leftover (remaining) from last month — unused
+ * budget rolls over. Returns the number of budgets created.
+ */
+class RolloverBudgetsUseCase(
+    private val repository: BudgetRepository
+) {
+    suspend operator fun invoke(): Int {
+        val calendar = java.util.Calendar.getInstance()
+        val currentMonth = monthString(calendar)
+        calendar.add(java.util.Calendar.MONTH, -1)
+        val previousMonth = monthString(calendar)
+
+        val previousBudgets = repository.getBudgetsPage(previousMonth, MAX_BUDGETS, 0)
+        var created = 0
+        for (prev in previousBudgets) {
+            val existing = repository.getBudgetByCategory(prev.category, currentMonth)
+            if (existing != null) continue
+
+            val rolledAllowance = (prev.monthlyBudget + prev.remaining).coerceAtLeast(0.0)
+            repository.insertBudget(
+                Budget(
+                    category = prev.category,
+                    monthlyBudget = rolledAllowance,
+                    month = currentMonth,
+                    spent = 0.0
+                )
+            )
+            created++
+        }
+        return created
+    }
+
+    private fun monthString(calendar: java.util.Calendar): String {
+        val year = calendar.get(java.util.Calendar.YEAR)
+        val month = calendar.get(java.util.Calendar.MONTH) + 1
+        return String.format("%04d-%02d", year, month)
+    }
+
+    companion object {
+        private const val MAX_BUDGETS = 1000
+    }
+}

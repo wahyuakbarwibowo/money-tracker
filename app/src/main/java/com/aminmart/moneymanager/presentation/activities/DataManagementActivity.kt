@@ -146,34 +146,9 @@ class DataManagementActivity : AppCompatActivity() {
     }
 
     private fun checkPermissionAndBackup() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            if (Environment.isExternalStorageManager()) {
-                performBackup()
-            } else {
-                requestManageStorage()
-            }
-        } else {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                == PackageManager.PERMISSION_GRANTED
-            ) {
-                performBackup()
-            } else {
-                requestPermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-            }
-        }
-    }
-
-    private fun requestManageStorage() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            try {
-                val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
-                intent.data = Uri.parse("package:$packageName")
-                startActivity(intent)
-            } catch (_: Exception) {
-                val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
-                startActivity(intent)
-            }
-        }
+        // Writes to app-scoped external storage (getExternalFilesDir), which needs
+        // no runtime storage permission on any API level.
+        performBackup()
     }
 
     private fun performBackup() {

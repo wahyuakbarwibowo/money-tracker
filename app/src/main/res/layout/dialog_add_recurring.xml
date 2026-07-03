@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <Spinner
+        android:id="@+id/spinner_recurring_type"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <EditText
+        android:id="@+id/edit_recurring_amount"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:hint="@string/amount"
+        android:inputType="numberDecimal" />
+
+    <EditText
+        android:id="@+id/edit_recurring_category"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:hint="@string/category"
+        android:inputType="text" />
+
+    <EditText
+        android:id="@+id/edit_recurring_description"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:hint="@string/description"
+        android:inputType="text" />
+
+    <Spinner
+        android:id="@+id/spinner_recurring_frequency"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp" />
+
+    <EditText
+        android:id="@+id/edit_recurring_interval"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:hint="@string/recurring_interval_hint"
+        android:inputType="number"
+        android:text="1" />
+
+</LinearLayout>

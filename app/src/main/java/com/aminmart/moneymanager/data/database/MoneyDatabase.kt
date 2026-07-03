@@ -5,9 +5,11 @@ import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import com.aminmart.moneymanager.domain.model.Account
 import com.aminmart.moneymanager.domain.model.Budget
 import com.aminmart.moneymanager.domain.model.Debt
 import com.aminmart.moneymanager.domain.model.ImportHistory
+import com.aminmart.moneymanager.domain.model.RecurringRule
 import com.aminmart.moneymanager.domain.model.Transaction
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -19,7 +21,7 @@ class MoneyDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
 
     companion object {
         private const val DATABASE_NAME = "moneymanager.db"
-        private const val DATABASE_VERSION = 3
+        private const val DATABASE_VERSION = 5
 
         // Common columns
         private const val COL_ID = "id"
@@ -53,6 +55,20 @@ class MoneyDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
         private const val COL_DUE_DATE = "due_date"
         private const val COL_IS_PAID = "is_paid"
         private const val COL_UPDATED_AT = "updated_at"
+
+        // Recurring rules table
+        private const val TABLE_RECURRING = "recurring_rules"
+        private const val COL_FREQUENCY = "frequency"
+        private const val COL_INTERVAL = "interval_count"
+        private const val COL_NEXT_RUN = "next_run"
+        private const val COL_ACTIVE = "active"
+
+        // Accounts table
+        private const val TABLE_ACCOUNTS = "accounts"
+        private const val COL_ACCOUNT_NAME = "name"
+        private const val COL_INITIAL_BALANCE = "initial_balance"
+        private const val COL_ACCOUNT_ID = "account_id"
+        private const val DEFAULT_ACCOUNT_NAME = "Cash"
     }
 
     override fun onCreate(db: SQLiteDatabase) {
@@ -68,6 +84,15 @@ class MoneyDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
         if (oldVersion < 3) {
             db.execSQL("ALTER TABLE $TABLE_TRANSACTIONS ADD COLUMN $COL_IS_RIBA INTEGER NOT NULL DEFAULT 0")
         }
+        if (oldVersion < 4) {
+            db.execSQL(CREATE_RECURRING_TABLE_SQL)
+            db.execSQL("CREATE INDEX idx_recurring_next_run ON $TABLE_RECURRING($COL_NEXT_RUN)")
+        }
+        if (oldVersion < 5) {
+            db.execSQL(CREATE_ACCOUNTS_TABLE_SQL)
+            seedDefaultAccount(db)
+            db.execSQL("ALTER TABLE $TABLE_TRANSACTIONS ADD COLUMN $COL_ACCOUNT_ID INTEGER NOT NULL DEFAULT 1")
+        }
     }
 
     private fun createTables(db: SQLiteDatabase) {
@@ -81,7 +106,8 @@ class MoneyDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
                 $COL_DESCRIPTION TEXT,
                 $COL_DATE INTEGER NOT NULL,
                 $COL_CREATED_AT INTEGER NOT NULL,
-                $COL_IS_RIBA INTEGER NOT NULL DEFAULT 0
+                $COL_IS_RIBA INTEGER NOT NULL DEFAULT 0,
+                $COL_ACCOUNT_ID INTEGER NOT NULL DEFAULT 1
             )
         """)
 
@@ -112,6 +138,13 @@ class MoneyDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
         // Create debts table
         db.execSQL(CREATE_DEBTS_TABLE_SQL)
 
+        // Create recurring rules table
+        db.execSQL(CREATE_RECURRING_TABLE_SQL)
+
+        // Create accounts table + seed the default account
+        db.execSQL(CREATE_ACCOUNTS_TABLE_SQL)
+        seedDefaultAccount(db)
+
         // Create indexes for better performance
         db.execSQL("CREATE INDEX idx_transactions_type ON $TABLE_TRANSACTIONS($COL_TYPE)")
         db.execSQL("CREATE INDEX idx_transactions_date ON $TABLE_TRANSACTIONS($COL_DATE)")
@@ -119,7 +152,43 @@ class MoneyDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
         db.execSQL("CREATE INDEX idx_budgets_month ON $TABLE_BUDGETS($COL_MONTH)")
         db.execSQL("CREATE INDEX idx_debts_type ON $TABLE_DEBTS($COL_TYPE)")
         db.execSQL("CREATE INDEX idx_debts_is_paid ON $TABLE_DEBTS($COL_IS_PAID)")
+        db.execSQL("CREATE INDEX idx_recurring_next_run ON $TABLE_RECURRING($COL_NEXT_RUN)")
     }
+
+    private val CREATE_ACCOUNTS_TABLE_SQL = """
+        CREATE TABLE $TABLE_ACCOUNTS (
+            $COL_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            $COL_ACCOUNT_NAME TEXT NOT NULL,
+            $COL_INITIAL_BALANCE REAL NOT NULL DEFAULT 0,
+            $COL_CREATED_AT INTEGER NOT NULL
+        )
+    """
+
+    private fun seedDefaultAccount(db: SQLiteDatabase) {
+        val values = ContentValues().apply {
+            put(COL_ID, Transaction.DEFAULT_ACCOUNT_ID)
+            put(COL_ACCOUNT_NAME, DEFAULT_ACCOUNT_NAME)
+            put(COL_INITIAL_BALANCE, 0.0)
+            put(COL_CREATED_AT, System.currentTimeMillis())
+        }
+        db.insertWithOnConflict(TABLE_ACCOUNTS, null, values, SQLiteDatabase.CONFLICT_IGNORE)
+    }
+
+    private val CREATE_RECURRING_TABLE_SQL = """
+        CREATE TABLE $TABLE_RECURRING (
+            $COL_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            $COL_TYPE TEXT NOT NULL,
+            $COL_AMOUNT REAL NOT NULL,
+            $COL_CATEGORY TEXT NOT NULL,
+            $COL_DESCRIPTION TEXT,
+            $COL_IS_RIBA INTEGER NOT NULL DEFAULT 0,
+            $COL_FREQUENCY TEXT NOT NULL,
+            $COL_INTERVAL INTEGER NOT NULL DEFAULT 1,
+            $COL_NEXT_RUN INTEGER NOT NULL,
+            $COL_ACTIVE INTEGER NOT NULL DEFAULT 1,
+            $COL_CREATED_AT INTEGER NOT NULL
+        )
+    """
 
     private val CREATE_DEBTS_TABLE_SQL = """
         CREATE TABLE $TABLE_DEBTS (
@@ -490,11 +559,166 @@ class MoneyDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
         db.delete(TABLE_DEBTS, "$COL_ID = ?", arrayOf(id.toString()))
     }
 
+    // ==================== Account Operations ====================
+
+    fun getAllAccounts(): Flow<List<Account>> = flow {
+        emit(queryAccounts())
+    }
+
+    private fun queryAccounts(): List<Account> {
+        val db = readableDatabase
+        val cursor = db.query(TABLE_ACCOUNTS, null, null, null, null, null, "$COL_ID ASC")
+        val accounts = mutableListOf<Account>()
+        cursor.use {
+            while (it.moveToNext()) {
+                val account = cursorToAccount(it)
+                accounts.add(account.copy(currentBalance = computeBalance(db, account)))
+            }
+        }
+        return accounts
+    }
+
+    suspend fun getAccountById(id: Long): Account? {
+        val db = readableDatabase
+        val cursor = db.query(TABLE_ACCOUNTS, null, "$COL_ID = ?", arrayOf(id.toString()), null, null, null)
+        return cursor.use {
+            if (it.moveToFirst()) {
+                val account = cursorToAccount(it)
+                account.copy(currentBalance = computeBalance(db, account))
+            } else null
+        }
+    }
+
+    suspend fun insertAccount(account: Account): Long {
+        val db = writableDatabase
+        return db.insert(TABLE_ACCOUNTS, null, accountToContentValues(account))
+    }
+
+    suspend fun updateAccount(account: Account) {
+        val db = writableDatabase
+        db.update(TABLE_ACCOUNTS, accountToContentValues(account), "$COL_ID = ?", arrayOf(account.id.toString()))
+    }
+
+    suspend fun deleteAccount(id: Long) {
+        if (id == Transaction.DEFAULT_ACCOUNT_ID) return // never delete the default account
+        val db = writableDatabase
+        // Reassign this account's transactions back to the default account.
+        ContentValues().apply { put(COL_ACCOUNT_ID, Transaction.DEFAULT_ACCOUNT_ID) }.also { cv ->
+            db.update(TABLE_TRANSACTIONS, cv, "$COL_ACCOUNT_ID = ?", arrayOf(id.toString()))
+        }
+        db.delete(TABLE_ACCOUNTS, "$COL_ID = ?", arrayOf(id.toString()))
+    }
+
+    private fun computeBalance(db: SQLiteDatabase, account: Account): Double {
+        val cursor = db.rawQuery(
+            """
+            SELECT
+              COALESCE(SUM(CASE WHEN $COL_TYPE = ? THEN $COL_AMOUNT ELSE 0 END), 0) -
+              COALESCE(SUM(CASE WHEN $COL_TYPE = ? THEN $COL_AMOUNT ELSE 0 END), 0)
+            FROM $TABLE_TRANSACTIONS WHERE $COL_ACCOUNT_ID = ?
+            """,
+            arrayOf(
+                Transaction.TransactionType.INCOME.name,
+                Transaction.TransactionType.EXPENSE.name,
+                account.id.toString()
+            )
+        )
+        val net = cursor.use { if (it.moveToFirst()) it.getDouble(0) else 0.0 }
+        return account.initialBalance + net
+    }
+
+    private fun accountToContentValues(account: Account): ContentValues = ContentValues().apply {
+        if (account.id != 0L) put(COL_ID, account.id)
+        put(COL_ACCOUNT_NAME, account.name)
+        put(COL_INITIAL_BALANCE, account.initialBalance)
+        put(COL_CREATED_AT, account.createdAt)
+    }
+
+    private fun cursorToAccount(cursor: Cursor): Account = Account(
+        id = cursor.getLong(cursor.getColumnIndexOrThrow(COL_ID)),
+        name = cursor.getString(cursor.getColumnIndexOrThrow(COL_ACCOUNT_NAME)),
+        initialBalance = cursor.getDouble(cursor.getColumnIndexOrThrow(COL_INITIAL_BALANCE)),
+        createdAt = cursor.getLong(cursor.getColumnIndexOrThrow(COL_CREATED_AT))
+    )
+
+    // ==================== Recurring Rule Operations ====================
+
+    fun getAllRecurringRules(): Flow<List<RecurringRule>> = flow {
+        emit(queryRecurringRules(null, null))
+    }
+
+    suspend fun getDueRecurringRules(now: Long): List<RecurringRule> =
+        queryRecurringRules("$COL_ACTIVE = 1 AND $COL_NEXT_RUN <= ?", arrayOf(now.toString()))
+
+    suspend fun getRecurringRuleById(id: Long): RecurringRule? =
+        queryRecurringRules("$COL_ID = ?", arrayOf(id.toString())).firstOrNull()
+
+    suspend fun insertRecurringRule(rule: RecurringRule): Long {
+        val db = writableDatabase
+        return db.insert(TABLE_RECURRING, null, recurringToContentValues(rule))
+    }
+
+    suspend fun updateRecurringRule(rule: RecurringRule) {
+        val db = writableDatabase
+        db.update(
+            TABLE_RECURRING,
+            recurringToContentValues(rule),
+            "$COL_ID = ?",
+            arrayOf(rule.id.toString())
+        )
+    }
+
+    suspend fun deleteRecurringRule(id: Long) {
+        val db = writableDatabase
+        db.delete(TABLE_RECURRING, "$COL_ID = ?", arrayOf(id.toString()))
+    }
+
+    private fun queryRecurringRules(selection: String?, args: Array<String>?): List<RecurringRule> {
+        val db = readableDatabase
+        val cursor = db.query(
+            TABLE_RECURRING, null, selection, args, null, null, "$COL_NEXT_RUN ASC"
+        )
+        val rules = mutableListOf<RecurringRule>()
+        cursor.use {
+            while (it.moveToNext()) rules.add(cursorToRecurringRule(it))
+        }
+        return rules
+    }
+
+    private fun recurringToContentValues(rule: RecurringRule): ContentValues = ContentValues().apply {
+        if (rule.id != 0L) put(COL_ID, rule.id)
+        put(COL_TYPE, rule.type.name)
+        put(COL_AMOUNT, rule.amount)
+        put(COL_CATEGORY, rule.category)
+        put(COL_DESCRIPTION, rule.description)
+        put(COL_IS_RIBA, if (rule.isRiba) 1 else 0)
+        put(COL_FREQUENCY, rule.frequency.name)
+        put(COL_INTERVAL, rule.intervalCount)
+        put(COL_NEXT_RUN, rule.nextRun)
+        put(COL_ACTIVE, if (rule.active) 1 else 0)
+        put(COL_CREATED_AT, rule.createdAt)
+    }
+
+    private fun cursorToRecurringRule(cursor: Cursor): RecurringRule = RecurringRule(
+        id = cursor.getLong(cursor.getColumnIndexOrThrow(COL_ID)),
+        type = Transaction.TransactionType.valueOf(cursor.getString(cursor.getColumnIndexOrThrow(COL_TYPE))),
+        amount = cursor.getDouble(cursor.getColumnIndexOrThrow(COL_AMOUNT)),
+        category = cursor.getString(cursor.getColumnIndexOrThrow(COL_CATEGORY)),
+        description = cursor.getString(cursor.getColumnIndexOrThrow(COL_DESCRIPTION)) ?: "",
+        isRiba = cursor.getInt(cursor.getColumnIndexOrThrow(COL_IS_RIBA)) == 1,
+        frequency = RecurringRule.Frequency.valueOf(cursor.getString(cursor.getColumnIndexOrThrow(COL_FREQUENCY))),
+        intervalCount = cursor.getInt(cursor.getColumnIndexOrThrow(COL_INTERVAL)),
+        nextRun = cursor.getLong(cursor.getColumnIndexOrThrow(COL_NEXT_RUN)),
+        active = cursor.getInt(cursor.getColumnIndexOrThrow(COL_ACTIVE)) == 1,
+        createdAt = cursor.getLong(cursor.getColumnIndexOrThrow(COL_CREATED_AT))
+    )
+
     suspend fun getTransactionsPage(
         limit: Int,
         offset: Int,
         type: Transaction.TransactionType?,
-        category: String?
+        category: String?,
+        query: String? = null
     ): List<Transaction> {
         val db = readableDatabase
         val whereParts = mutableListOf<String>()
@@ -506,6 +730,12 @@ class MoneyDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
         category?.let {
             whereParts.add("$COL_CATEGORY = ?")
             args.add(it)
+        }
+        query?.takeIf { it.isNotBlank() }?.let {
+            whereParts.add("($COL_DESCRIPTION LIKE ? OR $COL_CATEGORY LIKE ?)")
+            val like = "%${it.trim()}%"
+            args.add(like)
+            args.add(like)
         }
         val selection = if (whereParts.isEmpty()) null else whereParts.joinToString(" AND ")
         val cursor = db.query(
@@ -523,7 +753,8 @@ class MoneyDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
 
     suspend fun getTransactionsCount(
         type: Transaction.TransactionType?,
-        category: String?
+        category: String?,
+        query: String? = null
     ): Int {
         val db = readableDatabase
         val whereParts = mutableListOf<String>()
@@ -535,6 +766,12 @@ class MoneyDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
         category?.let {
             whereParts.add("$COL_CATEGORY = ?")
             args.add(it)
+        }
+        query?.takeIf { it.isNotBlank() }?.let {
+            whereParts.add("($COL_DESCRIPTION LIKE ? OR $COL_CATEGORY LIKE ?)")
+            val like = "%${it.trim()}%"
+            args.add(like)
+            args.add(like)
         }
         val whereClause = if (whereParts.isEmpty()) "" else "WHERE ${whereParts.joinToString(" AND ")}"
         val cursor = db.rawQuery(
@@ -734,7 +971,10 @@ class MoneyDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
             description = cursor.getString(cursor.getColumnIndexOrThrow(COL_DESCRIPTION)),
             date = cursor.getLong(cursor.getColumnIndexOrThrow(COL_DATE)),
             createdAt = cursor.getLong(cursor.getColumnIndexOrThrow(COL_CREATED_AT)),
-            isRiba = cursor.getInt(cursor.getColumnIndexOrThrow(COL_IS_RIBA)) == 1
+            isRiba = cursor.getInt(cursor.getColumnIndexOrThrow(COL_IS_RIBA)) == 1,
+            accountId = cursor.getColumnIndex(COL_ACCOUNT_ID).let { idx ->
+                if (idx >= 0) cursor.getLong(idx) else Transaction.DEFAULT_ACCOUNT_ID
+            }
         )
     }
 
@@ -812,6 +1052,7 @@ class MoneyDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,
             put(COL_DATE, transaction.date)
             put(COL_CREATED_AT, transaction.createdAt)
             put(COL_IS_RIBA, if (transaction.isRiba) 1 else 0)
+            put(COL_ACCOUNT_ID, transaction.accountId)
         }
     }
 

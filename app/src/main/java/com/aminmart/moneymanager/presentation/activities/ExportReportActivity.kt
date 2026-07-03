@@ -171,21 +171,9 @@ class ExportReportActivity : AppCompatActivity() {
     }
 
     private fun checkPermissionAndExport() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            if (Environment.isExternalStorageManager()) {
-                performExport()
-            } else {
-                Toast.makeText(this, "Please grant storage permission", Toast.LENGTH_SHORT).show()
-            }
-        } else {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                == PackageManager.PERMISSION_GRANTED
-            ) {
-                performExport()
-            } else {
-                Toast.makeText(this, "Please grant storage permission", Toast.LENGTH_SHORT).show()
-            }
-        }
+        // Writes to app-scoped external storage (getExternalFilesDir), which needs
+        // no runtime storage permission on any API level.
+        performExport()
     }
 
     private fun performExport() {

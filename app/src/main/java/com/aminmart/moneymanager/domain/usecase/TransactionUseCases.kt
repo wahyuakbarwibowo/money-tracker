@@ -50,8 +50,9 @@ class GetTransactionsPageUseCase(
         limit: Int,
         offset: Int,
         type: Transaction.TransactionType? = null,
-        category: String? = null
-    ): List<Transaction> = repository.getTransactionsPage(limit, offset, type, category)
+        category: String? = null,
+        query: String? = null
+    ): List<Transaction> = repository.getTransactionsPage(limit, offset, type, category, query)
 }
 
 class GetTransactionsCountUseCase(
@@ -59,6 +60,7 @@ class GetTransactionsCountUseCase(
 ) {
     suspend operator fun invoke(
         type: Transaction.TransactionType? = null,
-        category: String? = null
-    ): Int = repository.getTransactionsCount(type, category)
+        category: String? = null,
+        query: String? = null
+    ): Int = repository.getTransactionsCount(type, category, query)
 }

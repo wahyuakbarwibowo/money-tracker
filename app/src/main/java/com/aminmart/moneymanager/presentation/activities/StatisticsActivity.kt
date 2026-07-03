@@ -11,6 +11,7 @@ import android.widget.TextView
 import androidx.appcompat.widget.Toolbar
 import com.aminmart.moneymanager.MoneyManagerApplication
 import com.aminmart.moneymanager.R
+import com.aminmart.moneymanager.presentation.ui.CurrencyFormatter
 import com.aminmart.moneymanager.presentation.viewmodels.StatisticsPeriod
 import com.aminmart.moneymanager.presentation.viewmodels.StatisticsViewModel
 import com.github.mikephil.charting.charts.BarChart
@@ -54,9 +55,7 @@ class StatisticsActivity : BottomNavigationActivity() {
     private lateinit var cardInsights: View
     private lateinit var viewEmpty: View
 
-    private val currencyFormat = NumberFormat.getCurrencyInstance(Locale("id", "ID")).apply {
-        maximumFractionDigits = 0
-    }
+    private val currencyFormat = CurrencyFormatter
     private val chartColors by lazy {
         listOf(
             getColor(R.color.chart_blue),

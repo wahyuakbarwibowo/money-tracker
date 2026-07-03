@@ -33,7 +33,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Add/Edit Transaction Activity
@@ -82,6 +84,36 @@ class AddTransactionActivity : AppCompatActivity() {
         initViews()
         setupListeners()
         observeData()
+        setupAccountSpinner()
+    }
+
+    private var accounts: List<com.aminmart.moneymanager.domain.model.Account> = emptyList()
+
+    private fun setupAccountSpinner() {
+        val spinner = findViewById<android.widget.Spinner>(R.id.spinner_transaction_account)
+        activityScope.launch {
+            accounts = withContext(Dispatchers.IO) {
+                app.accountUseCases.getAccounts().first()
+            }
+            if (accounts.isEmpty()) return@launch
+
+            spinner.adapter = android.widget.ArrayAdapter(
+                this@AddTransactionActivity,
+                android.R.layout.simple_spinner_dropdown_item,
+                accounts.map { it.name }
+            )
+            // Reflect the transaction's current account (default or the edited one).
+            val currentId = viewModel.transactionState.value.accountId
+            accounts.indexOfFirst { it.id == currentId }.takeIf { it >= 0 }?.let {
+                spinner.setSelection(it)
+            }
+            spinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
+                    viewModel.setAccountId(accounts[position].id)
+                }
+                override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
+            }
+        }
     }
 
     private fun refreshCategories() {

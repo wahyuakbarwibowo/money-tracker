@@ -34,15 +34,17 @@ class TransactionRepositoryImpl(
         limit: Int,
         offset: Int,
         type: Transaction.TransactionType?,
-        category: String?
+        category: String?,
+        query: String?
     ): List<Transaction> =
-        database.getTransactionsPage(limit, offset, type, category)
+        database.getTransactionsPage(limit, offset, type, category, query)
 
     override suspend fun getTransactionsCount(
         type: Transaction.TransactionType?,
-        category: String?
+        category: String?,
+        query: String?
     ): Int =
-        database.getTransactionsCount(type, category)
+        database.getTransactionsCount(type, category, query)
 
     override suspend fun getTransactionById(id: Long): Transaction? =
         database.getTransactionById(id)
