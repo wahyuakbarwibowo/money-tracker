@@ -85,7 +85,7 @@ class TransactionsActivity : BottomNavigationActivity() {
     private fun setupRecyclerView() {
         adapter = TransactionAdapter(
             onItemClick = { transaction ->
-                showTransactionOptions(transaction)
+                navigateToAddTransaction(transaction)
             },
             onItemLongClick = { transaction ->
                 showTransactionOptions(transaction)
