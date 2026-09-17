@@ -19,8 +19,6 @@ import com.aminmart.moneymanager.presentation.viewmodels.DashboardViewModel
 import com.aminmart.moneymanager.presentation.viewmodels.DebtSummary
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import java.text.NumberFormat
-import java.util.Locale
 
 /**
  * Dashboard Activity - Main screen showing summary and recent transactions
@@ -67,9 +65,22 @@ class DashboardActivity : BottomNavigationActivity() {
         initViews()
         setupRecyclerView()
         observeData()
+        requestNotificationPermissionIfNeeded()
 
         fabAdd.setOnClickListener {
             navigateToAddTransaction()
+        }
+    }
+
+    private val notificationPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* result ignored */ }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.TIRAMISU) return
+        val granted = checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (!granted) {
+            notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 
@@ -95,7 +106,7 @@ class DashboardActivity : BottomNavigationActivity() {
     private fun setupRecyclerView() {
         adapter = TransactionAdapter(
             onItemClick = { transaction ->
-                showTransactionDetail(transaction)
+                navigateToAddTransaction(transaction)
             },
             onItemLongClick = { transaction ->
                 showTransactionOptions(transaction)
@@ -138,17 +149,6 @@ class DashboardActivity : BottomNavigationActivity() {
         textTotalCredit.text = "+${currencyFormat.format(summary.totalCredit)}"
     }
 
-    private fun showTransactionDetail(transaction: Transaction) {
-        AlertDialog.Builder(this)
-            .setTitle(transaction.category)
-            .setMessage(buildTransactionDetail(transaction))
-            .setPositiveButton("Edit") { _, _ ->
-                navigateToAddTransaction(transaction)
-            }
-            .setNegativeButton("Close", null)
-            .show()
-    }
-
     private fun showTransactionOptions(transaction: Transaction) {
         val options = arrayOf("Edit", "Delete")
         AlertDialog.Builder(this)
@@ -172,24 +172,6 @@ class DashboardActivity : BottomNavigationActivity() {
             }
             .setNegativeButton("Cancel", null)
             .show()
-    }
-
-    private fun buildTransactionDetail(transaction: Transaction): String {
-        val amountText = if (transaction.type == Transaction.TransactionType.INCOME) {
-            "+${currencyFormat.format(transaction.amount)}"
-        } else {
-            "-${currencyFormat.format(transaction.amount)}"
-        }
-        
-        val dateFormat = java.text.SimpleDateFormat("dd MMMM yyyy, HH:mm", Locale("id", "ID"))
-        val dateStr = dateFormat.format(java.util.Date(transaction.date))
-
-        return """
-            Amount: $amountText
-            Category: ${transaction.category}
-            Date: $dateStr
-            Description: ${transaction.description.ifEmpty { "-" }}
-        """.trimIndent()
     }
 
     private fun navigateToAddTransaction(transaction: Transaction? = null) {

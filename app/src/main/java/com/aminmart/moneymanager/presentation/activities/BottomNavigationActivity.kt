@@ -43,6 +43,9 @@ abstract class BottomNavigationActivity : AppCompatActivity() {
         }
         val options = android.app.ActivityOptions.makeCustomAnimation(this, android.R.anim.fade_in, android.R.anim.fade_out).toBundle()
         startActivity(intent, options)
+        // Dashboard stays as the task root; other tabs are replaced so Back
+        // always returns to Dashboard, then exits.
+        if (this !is DashboardActivity) finish()
     }
 
     protected fun <T> Flow<T>.collectInScope(action: suspend (T) -> Unit) {
