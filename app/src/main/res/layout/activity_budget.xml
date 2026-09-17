@@ -33,27 +33,39 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center"
-            android:padding="16dp"
+            android:gravity="center_vertical"
+            android:paddingVertical="8dp"
             android:background="@color/primary_light">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Month: "
-                android:textColor="@color/text_secondary"
-                android:textSize="14sp" />
+            <ImageButton
+                android:id="@+id/button_budget_prev_month"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/previous_month"
+                android:src="@drawable/ic_back"
+                app:tint="@color/primary" />
 
             <TextView
                 android:id="@+id/text_budget_month"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
                 android:text="January 2025"
                 android:textColor="@color/primary"
                 android:textSize="16sp"
-                android:textStyle="bold"
-                android:background="?attr/selectableItemBackground"
-                android:padding="8dp" />
+                android:textStyle="bold" />
+
+            <ImageButton
+                android:id="@+id/button_budget_next_month"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/next_month"
+                android:rotation="180"
+                android:src="@drawable/ic_back"
+                app:tint="@color/primary" />
 
         </LinearLayout>
 

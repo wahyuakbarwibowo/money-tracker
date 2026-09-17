@@ -90,9 +90,8 @@ class BudgetActivity : BottomNavigationActivity() {
         toolbar.navigationIcon = null
         setupBottomNavigation(R.id.nav_budget)
 
-        textMonth.setOnClickListener {
-            showMonthPicker()
-        }
+        findViewById<View>(R.id.button_budget_prev_month).setOnClickListener { shiftMonth(-1) }
+        findViewById<View>(R.id.button_budget_next_month).setOnClickListener { shiftMonth(1) }
     }
 
     private fun setupRecyclerView() {
@@ -162,32 +161,15 @@ class BudgetActivity : BottomNavigationActivity() {
         }
     }
 
-    private fun showMonthPicker() {
-        val calendar = Calendar.getInstance()
-        
-        AlertDialog.Builder(this)
-            .setTitle("Select Month")
-            .setPositiveButton("Previous") { _, _ ->
-                calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH) - 1)
-                val newMonth = String.format("%04d-%02d", 
-                    calendar.get(Calendar.YEAR), 
-                    calendar.get(Calendar.MONTH) + 1)
-                viewModel.setMonth(newMonth)
-            }
-            .setNeutralButton("Current") { _, _ ->
-                val newMonth = String.format("%04d-%02d",
-                    calendar.get(Calendar.YEAR),
-                    calendar.get(Calendar.MONTH) + 1)
-                viewModel.setMonth(newMonth)
-            }
-            .setNegativeButton("Next") { _, _ ->
-                calendar.set(Calendar.MONTH, calendar.get(Calendar.MONTH) + 1)
-                val newMonth = String.format("%04d-%02d",
-                    calendar.get(Calendar.YEAR),
-                    calendar.get(Calendar.MONTH) + 1)
-                viewModel.setMonth(newMonth)
-            }
-            .show()
+    private fun shiftMonth(delta: Int) {
+        val (year, month) = viewModel.currentMonth.value.split("-").map { it.toInt() }
+        val calendar = Calendar.getInstance().apply {
+            set(year, month - 1, 1)
+            add(Calendar.MONTH, delta)
+        }
+        viewModel.setMonth(
+            String.format("%04d-%02d", calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH) + 1)
+        )
     }
 
     private fun showAddBudgetDialog() {

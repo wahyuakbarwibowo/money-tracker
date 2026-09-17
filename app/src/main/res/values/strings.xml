@@ -41,6 +41,8 @@
     <string name="spent">Spent</string>
     <string name="remaining">Remaining</string>
     <string name="over_budget">Over Budget!</string>
+    <string name="previous_month">Previous month</string>
+    <string name="next_month">Next month</string>
     
     <!-- Statistics -->
     <string name="statistics">Statistics</string>
