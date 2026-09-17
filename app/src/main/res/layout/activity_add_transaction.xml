@@ -159,14 +159,6 @@
                 android:layout_marginTop="8dp"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
 
-            <TextView
-                android:id="@+id/text_transaction_date_display"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/text_secondary"
-                android:textSize="14sp"
-                android:layout_marginTop="4dp" />
-
             <com.google.android.material.switchmaterial.SwitchMaterial
                 android:id="@+id/switch_transaction_riba"
                 android:layout_width="wrap_content"

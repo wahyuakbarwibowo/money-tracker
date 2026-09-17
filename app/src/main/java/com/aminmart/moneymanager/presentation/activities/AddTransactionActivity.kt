@@ -9,7 +9,6 @@ import android.widget.AutoCompleteTextView
 import android.widget.Button
 import android.widget.RadioButton
 import android.widget.RadioGroup
-import android.widget.TextView
 import android.widget.Toast
 import android.widget.AdapterView
 import java.util.Date
@@ -54,7 +53,6 @@ class AddTransactionActivity : AppCompatActivity() {
     private lateinit var categoryDropdown: AutoCompleteTextView
     private lateinit var editDescription: TextInputEditText
     private lateinit var buttonDate: Button
-    private lateinit var textDate: TextView
     private lateinit var ribaSwitch: SwitchMaterial
     private lateinit var buttonSave: Button
 
@@ -132,7 +130,6 @@ class AddTransactionActivity : AppCompatActivity() {
         categoryDropdown = findViewById(R.id.dropdown_transaction_category)
         editDescription = findViewById(R.id.edit_transaction_description)
         buttonDate = findViewById(R.id.button_transaction_date)
-        textDate = findViewById(R.id.text_transaction_date_display)
         ribaSwitch = findViewById(R.id.switch_transaction_riba)
         buttonSave = findViewById(R.id.button_transaction_save)
 
@@ -190,7 +187,7 @@ class AddTransactionActivity : AppCompatActivity() {
             } else {
                 if (!radioExpense.isChecked) radioExpense.isChecked = true
             }
-            textDate.text = dateFormat.format(Date(transaction.date))
+            buttonDate.text = dateFormat.format(Date(transaction.date))
             updateCategoryDropdown(transaction.category)
         }
 
